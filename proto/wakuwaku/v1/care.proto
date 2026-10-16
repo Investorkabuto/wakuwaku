@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package wakuwaku.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/investorkabuto/wakuwaku/server/internal/gen/wakuwaku/v1;wakuwakuv1";
+
+// CareService は服薬管理（MED-01, MED-04, MED-05, MED-07）を扱う。
+// 医療的判断（用量計算・飲み合わせ等）は一切行わない。
+service CareService {
+  rpc ListMedications(ListMedicationsRequest) returns (ListMedicationsResponse) {}
+  rpc CreateMedication(CreateMedicationRequest) returns (CreateMedicationResponse) {}
+  // 服薬を記録する。dose_log_id はクライアント生成のUUIDで、同一IDの再送は冪等。
+  rpc RecordDose(RecordDoseRequest) returns (RecordDoseResponse) {}
+  rpc ListDoseLogs(ListDoseLogsRequest) returns (ListDoseLogsResponse) {}
+}
+
+enum DoseTiming {
+  DOSE_TIMING_UNSPECIFIED = 0;
+  DOSE_TIMING_MORNING = 1;
+  DOSE_TIMING_NOON = 2;
+  DOSE_TIMING_EVENING = 3;
+  DOSE_TIMING_BEDTIME = 4;
+}
+
+message Medication {
+  string id = 1;
+  string name = 2;
+  // 1回量の自由記述（例: "1錠"）。アプリは解釈しない。
+  string dose_text = 3;
+  repeated DoseTiming timings = 4;
+}
+
+message ListMedicationsRequest {}
+
+message ListMedicationsResponse {
+  repeated Medication medications = 1;
+}
+
+message CreateMedicationRequest {
+  string name = 1;
+  string dose_text = 2;
+  repeated DoseTiming timings = 3;
+}
+
+message CreateMedicationResponse {
+  Medication medication = 1;
+}
+
+message RecordDoseRequest {
+  string dose_log_id = 1;
+  string medication_id = 2;
+  DoseTiming timing = 3;
+  // 服薬予定日（利用者のタイムゾーンでの日付, YYYY-MM-DD）。
+  string scheduled_date = 4;
+  google.protobuf.Timestamp taken_at = 5;
+  // 同じ回が既に記録済みでも記録する（MED-05 の確認後の再記録）。
+  bool confirm_duplicate = 6;
+}
+
+message RecordDoseResponse {
+  // 同じ回が記録済みで confirm_duplicate=false の場合 true。記録は行われない。
+  bool already_recorded = 1;
+  DoseLog dose_log = 2;
+}
+
+message DoseLog {
+  string id = 1;
+  string medication_id = 2;
+  DoseTiming timing = 3;
+  string scheduled_date = 4;
+  google.protobuf.Timestamp taken_at = 5;
+}
+
+message ListDoseLogsRequest {
+  // 期間（YYYY-MM-DD, 両端含む）
+  string from_date = 1;
+  string to_date = 2;
+}
+
+message ListDoseLogsResponse {
+  repeated DoseLog dose_logs = 1;
+}

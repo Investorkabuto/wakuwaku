@@ -16,3 +16,23 @@
 - [04. 技術選定の検討（ADR）](docs/04_tech_decisions.md)
 - [05. テスト運用環境（10人規模）](docs/05_test_environment.md)
 - [06. Webアプリ先行の課題](docs/06_web_first.md)
+
+## 開発
+
+```
+server/   Go API（Connect RPC, PostgreSQL）
+web/      Web版（SvelteKit PWA）
+proto/    API定義（ここから Go / TypeScript のコードを生成）
+```
+
+必要なもの: Go 1.26+, Node.js 22+, PostgreSQL 16（`docker compose up -d db` でも可）
+
+```sh
+make tools      # コード生成ツールと web の依存をインストール
+make gen        # proto を変更したら実行
+make run-api    # API（http://localhost:8080、開発用ログイン）
+make run-web    # Web（http://localhost:5173）
+make test check
+```
+
+ローカルでは Firebase を使わず、「開発用ログイン」（名前を入れるだけ）で動作する。

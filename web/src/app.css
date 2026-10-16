@@ -1,0 +1,104 @@
+/* やさしいモードを既定とする（最小文字 20px 相当、タップ領域 56px 以上）。 */
+:root {
+	--bg: #fbf6e9;
+	--surface: #ffffff;
+	--text: #2e2a24;
+	--muted: #5f574b;
+	--primary: #3f7a2a;
+	--primary-text: #ffffff;
+	--accent: #e8a33d;
+	--done: #e3efd9;
+	--border: #d9cfb8;
+	--danger: #b3261e;
+	--radius: 16px;
+	--tap: 56px;
+	font-size: 20px;
+	color-scheme: light;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+	line-height: 1.6;
+	/* 引っ張って再読み込み・スクロール連鎖を防ぐ。 */
+	overscroll-behavior: none;
+}
+
+body {
+	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+		env(safe-area-inset-left);
+}
+
+button,
+a,
+input,
+label {
+	/* ダブルタップでの拡大を防ぐ（ピンチ拡大は残す）。 */
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+
+button {
+	-webkit-touch-callout: none;
+	user-select: none;
+	font: inherit;
+	min-height: var(--tap);
+	border-radius: var(--radius);
+	border: 2px solid transparent;
+	padding: 0.4rem 1.2rem;
+	cursor: pointer;
+	transition: transform 80ms ease, background-color 120ms ease;
+}
+
+/* iPhoneでは振動が使えないため、押した感触は見た目で返す。 */
+button:active {
+	transform: scale(0.96);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+	outline: 4px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.btn-primary {
+	background: var(--primary);
+	color: var(--primary-text);
+	font-weight: 700;
+}
+
+.btn-secondary {
+	background: var(--surface);
+	color: var(--text);
+	border-color: var(--border);
+}
+
+input[type='text'] {
+	font: inherit;
+	width: 100%;
+	min-height: var(--tap);
+	padding: 0.4rem 0.8rem;
+	border: 2px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+
+.card {
+	background: var(--surface);
+	border: 2px solid var(--border);
+	border-radius: var(--radius);
+	padding: 1rem;
+}
+
+.error {
+	color: var(--danger);
+	font-weight: 700;
+}

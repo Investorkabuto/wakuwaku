@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package wakuwaku.v1;
+
+option go_package = "github.com/investorkabuto/wakuwaku/server/internal/gen/wakuwaku/v1;wakuwakuv1";
+
+// SystemService はサーバーの稼働確認用。
+service SystemService {
+  rpc Ping(PingRequest) returns (PingResponse) {}
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string version = 1;
+}
