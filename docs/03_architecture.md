@@ -1,21 +1,22 @@
 # 03. システム設計（初期案）
 
-> ステータス: ドラフト v0.1 / 2026-10-16
+> ステータス: ドラフト v0.2 / 2026-10-16（技術選定は [04_tech_decisions.md](04_tech_decisions.md) を正とする）
 
 ## 1. 全体構成
 
 ```
 ┌──────────────── Flutter アプリ (iOS / Android) ────────────────┐
-│  UI層 (Flutter Widgets)   ゲーム層 (Flame)                      │
+│  UI層 (Flutter Widgets)   3Dゲーム層 (flutter_scene ※検証後確定) │
+│                 └── GameBridge（エンジン差し替え用の境界）       │
 │  状態管理 (Riverpod)                                            │
 │  ローカルDB (drift / SQLite, 暗号化)  ← オフラインファースト     │
 │  ローカル通知 (flutter_local_notifications)                     │
 │  ヘルス連携 (health パッケージ: HealthKit / Health Connect)      │
 │  同期エンジン (送信キュー + 差分取得)                             │
 └──────────────┬───────────────────────────┬─────────────────────┘
-               │ HTTPS (REST/RPC)          │ WebSocket (Phase 3 リアルタイム訪問)
+               │ HTTPS (Connect RPC/protobuf) │ WebSocket (Phase 3 リアルタイム訪問)
 ┌──────────────▼───────────────────────────▼─────────────────────┐
-│ API サーバー (Dart: Serverpod)  ── Cloud Run / コンテナ          │
+│ API サーバー (Go モジュラーモノリス) ── Cloud Run / コンテナ     │
 │  ├ 認証 (Firebase Auth のIDトークン検証)                        │
 │  ├ タスク・服薬API / 同期API                                    │
 │  ├ ゲームAPI (農園状態、インベントリ、ショップ、訪問)              │
@@ -34,11 +35,13 @@
 | 領域 | 候補（推奨を太字） | 理由 |
 |---|---|---|
 | クライアント | **Flutter** | 要件指定。iOS/Android単一コード |
-| ゲーム描画 | **Flame** | Flutter統合の2Dゲームエンジン。UIはFlutterウィジェット、農園マップはFlameと役割分担 |
+| 3D描画 | **flutter_scene**（第2候補: Godot+LibGodot） | 3D要件。Phase 0の技術検証で確定（ADR-001） |
+| 3Dアセット | **Blender Python スクリプト → glTF** | 自社制作をコードで行う（ADR-002） |
 | 状態管理 | **Riverpod** | テスト容易・非同期処理に強い |
 | ローカルDB | **drift (SQLite)** + SQLCipher | 型安全、マイグレーション、暗号化対応 |
 | ヘルス連携 | `health` パッケージ | HealthKit/Health Connect 両対応 |
-| サーバー言語 | **Dart (Serverpod)** / Go / TypeScript(NestJS) | Dartならモデル・バリデーション・ゲームロジックをクライアントと共有できる。チームの得意言語次第でGo/TSも可 |
+| サーバー言語 | **Go**（モジュラーモノリス） | 性能・運用・拡張性。3Dエンジン選定に左右されない（ADR-003） |
+| API定義 | **Connect RPC (protobuf)** | Go/Dartのコード生成でスキーマを一元管理 |
 | 認証 | **Firebase Authentication** | SMS・Apple・Googleログインを低工数で実現 |
 | DB | **PostgreSQL**（Cloud SQL 等） | リレーショナルな家族・権限モデルに適する |
 | キャッシュ/キュー | Redis | セッション、レート制限、ジョブキュー |
@@ -61,14 +64,14 @@ lib/
 │  ├ tasks/        # 服薬・運動・汎用タスク
 │  ├ watch/        # 見守りパネル
 │  ├ family/       # 家族グループ・交流
-│  ├ farm/         # 農園（Flame）
+│  ├ farm/         # 農園（3D / GameBridge経由）
 │  ├ village/      # NPC・ショップ・イベント
 │  └ settings/
-└ shared/          # サーバーと共有するモデル（Serverpod生成コード）
+└ gen/             # protobuf から生成したAPIクライアント
 ```
 
 - **モードはテーマとして実装**: `EasyMode` / `NormalMode` で文字サイズ・タップ領域・画面遷移パターンを切替。機能ロジックは共通。
-- **ゲームロジックの決定性**: 作物の成長は「植えた時刻＋累積した水/肥料」から計算する純関数とし、クライアントとサーバーで同じコードを使う（不正防止とオフライン対応の両立）。
+- **ゲームロジックの決定性**: 作物の成長は「植えた時刻＋累積した水/肥料」から計算する純関数とし、サーバー(Go)を権威、クライアント(Dart)は同等実装で予測表示。共通ゴールデンテストで一致を保証（不正防止とオフライン対応の両立）。
 
 ## 4. オフライン同期方針
 
@@ -149,12 +152,14 @@ AuditLog(id, actor, action, target, at)
 - レート制限（訪問・ギフト・メッセージのスパム対策）
 - ゲーム経済の不正対策: 恵みの付与はサーバー側の `RewardRule` で計算し、1日の上限を設ける（タスクを大量登録して稼ぐ行為を防ぐ）
 
-## 9. 未決事項（要相談）
+## 9. 決定事項・未決事項
 
-1. サーバー言語: Dart(Serverpod) で良いか、チームの得意言語（Go / TypeScript 等）があるか
-2. インフラ: GCP 前提で良いか（AWS 希望等）
-3. 視点: 見下ろし型2D / クォータービュー（アイソメトリック） / 3D のどれにするか（Flame は2D向け。3Dなら Unity 連携等を検討）
-4. アート制作体制（外注 / 内製 / 素材購入）
-5. 対応言語: 日本語のみで開始か
-6. 開発体制・期間・予算感（MVPの範囲調整に影響）
-7. B2B（介護施設・自治体）をどの程度早く視野に入れるか
+決定:
+- 表現は3D／アートは自社（Blenderスクリプト）／開発はAIが担当、期間は問わない
+- サーバーは Go＋Connect RPC（[ADR-003](04_tech_decisions.md)）
+
+未決:
+1. 3Dエンジンの最終決定（Phase 0の技術検証で flutter_scene か Godot かを決める）
+2. インフラ: GCP 前提で良いか
+3. 対応言語: 日本語のみで開始か
+4. B2B展開の時期（構造上は `care` モジュールを切り出せるようにしておく）
