@@ -14,3 +14,4 @@
 - [02. 要件定義](docs/02_requirements.md)
 - [03. システム設計（初期案）](docs/03_architecture.md)
 - [04. 技術選定の検討（ADR）](docs/04_tech_decisions.md)
+- [05. テスト運用環境（10人規模）](docs/05_test_environment.md)
