@@ -25,9 +25,11 @@
 │ ワーカー (見守り判定ジョブ / 週次サマリー / プッシュ送信)          │
 └──────┬─────────────┬───────────────┬───────────────┬───────────┘
        │             │               │               │
-  PostgreSQL       Redis        オブジェクト      FCM / APNs
-  (主データ)   (キャッシュ/      ストレージ       (プッシュ通知)
-               ジョブキュー)    (薬写真・アセット)
+  PostgreSQL     Redis(※拡張時)  Cloud Storage    FCM / APNs
+  (Cloud SQL,   (キャッシュ/     for Firebase      (プッシュ通知)
+   東京)         ジョブキュー)   (薬写真・アセット)
+  定期ジョブ: Cloud Scheduler → Cloud Run   周辺: Firebase Auth / Crashlytics / Remote Config / App Check
+  ※ 少人数期の構成は ADR-004 参照
 ```
 
 ## 2. 技術選定
@@ -157,9 +159,9 @@ AuditLog(id, actor, action, target, at)
 決定:
 - 表現は3D／アートは自社（Blenderスクリプト）／開発はAIが担当、期間は問わない
 - サーバーは Go＋Connect RPC（[ADR-003](04_tech_decisions.md)）
+- 初期インフラは Firebase（Auth/FCM/Crashlytics等）＋ Go on Cloud Run ＋ Cloud SQL のハイブリッド（ADR-004）
 
 未決:
 1. 3Dエンジンの最終決定（Phase 0の技術検証で flutter_scene か Godot かを決める）
-2. インフラ: GCP 前提で良いか
-3. 対応言語: 日本語のみで開始か
-4. B2B展開の時期（構造上は `care` モジュールを切り出せるようにしておく）
+2. 対応言語: 日本語のみで開始か
+3. B2B展開の時期（構造上は `care` モジュールを切り出せるようにしておく）

@@ -5,7 +5,8 @@
 
 - クライアント: Flutter
 - 3D: flutter_scene（第2候補 Godot）※Phase 0で検証
-- サーバー: Go（モジュラーモノリス）+ Connect RPC + PostgreSQL on GCP
+- サーバー: Go（モジュラーモノリス）+ Connect RPC + PostgreSQL（Cloud Run / Cloud SQL 東京）
+- Firebase: Auth / FCM / Crashlytics / Remote Config / App Check / Storage
 
 ## ドキュメント
 
