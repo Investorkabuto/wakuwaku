@@ -3,8 +3,8 @@
 どうぶつの森風の農業スローライフゲーム × 高齢者の服薬管理・見守り。
 現実の服薬・運動が、ゲーム内の畑を育てる「水」や「肥料」になる。家族はゲームの中で遊びに行く形で自然に見守れる。
 
-- クライアント: Flutter
-- 3D: flutter_scene（第2候補 Godot）※Phase 0で検証
+- クライアント（最初）: Web版PWA — SvelteKit + three.js + Webプッシュ（ADR-005）
+- クライアント（将来）: ネイティブアプリ（Capacitor または Flutter。テスト後に判断）
 - サーバー: Go（モジュラーモノリス）+ Connect RPC + PostgreSQL（Cloud Run / Cloud SQL 東京）
 - Firebase: Auth / FCM / Crashlytics / Remote Config / App Check / Storage
 
